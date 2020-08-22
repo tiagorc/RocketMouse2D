@@ -9,10 +9,17 @@ public class MouseController : MonoBehaviour
     public Rigidbody2D playerRigidbody;
     public float forwardMovementSpeed = 3.0f;
 
+    public Transform groundCheckTransform;
+    private bool isGrounded;
+    public LayerMask groundCheckLayerMask;
+    private Animator mouseAnimator;
+
+    public ParticleSystem jetpack;
+
     // Start is called before the first frame update
     void Start()
     {
-
+        mouseAnimator = GetComponent<Animator>();
     }
 
     // Update is called once per frame
@@ -34,5 +41,28 @@ public class MouseController : MonoBehaviour
         Vector2 newVelocity = playerRigidbody.velocity;
         newVelocity.x = forwardMovementSpeed;
         playerRigidbody.velocity = newVelocity;
+
+        UpdateGroundStatus();
+        AdjustJetpack(jetpackActive);
+    }
+
+    void UpdateGroundStatus()
+    {
+        isGrounded = Physics2D.OverlapCircle(groundCheckTransform.position, 0.1f, groundCheckLayerMask);
+        mouseAnimator.SetBool("isGrounded", isGrounded);
+    }
+
+    void AdjustJetpack(bool jetpackActive)
+    {
+        var jetpackEmission = jetpack.emission;
+        jetpackEmission.enabled = !isGrounded;
+        if (jetpackActive)
+        {
+            jetpackEmission.rateOverTime = 300.0f;
+        }
+        else
+        {
+            jetpackEmission.rateOverTime = 75.0f;
+        }
     }
 }
