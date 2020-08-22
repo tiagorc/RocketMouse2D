@@ -17,6 +17,7 @@ public class MouseController : MonoBehaviour
     public ParticleSystem jetpack;
 
     private bool isDead = false;
+    private uint coins = 0;
 
     // Start is called before the first frame update
     void Start()
@@ -73,12 +74,26 @@ public class MouseController : MonoBehaviour
 
     void OnTriggerEnter2D(Collider2D collider)
     {
-        HitByLaser(collider);
+
+        if (collider.gameObject.CompareTag("Coins"))
+        {
+            CollectCoin(collider);
+        }
+        else
+        {
+            HitByLaser(collider);
+        }
     }
 
     void HitByLaser(Collider2D laserCollider)
     {
         isDead = true;
         mouseAnimator.SetBool("isDead", true);
+    }
+
+    void CollectCoin(Collider2D coinCollider)
+    {
+        coins++;
+        Destroy(coinCollider.gameObject);
     }
 }

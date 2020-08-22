@@ -8,6 +8,19 @@ public class GeneratorScript : MonoBehaviour
     public GameObject[] availableRooms;
     public List<GameObject> currentRooms;
     private float screenWidthInPoints;
+
+    public GameObject[] availableObjects;
+    public List<GameObject> objects;
+
+    public float objectsMinDistance = 5.0f;
+    public float objectsMaxDistance = 10.0f;
+
+    public float objectsMinY = -1.4f;
+    public float objectsMaxY = 1.4f;
+
+    public float objectsMinRotation = -45.0f;
+    public float objectsMaxRotation = 45.0f;
+
     // Start is called before the first frame update
     void Start()
     {
@@ -30,6 +43,7 @@ public class GeneratorScript : MonoBehaviour
         while (true)
         {
             GenerateRoomIfRequired();
+            GenerateObjectsIfRequired();
             yield return new WaitForSeconds(0.25f);
         }
     }
@@ -99,6 +113,57 @@ public class GeneratorScript : MonoBehaviour
         if (addRooms)
         {
             AddRoom(farthestRoomEndX);
+        }
+    }
+
+    void AddObject(float lastObjectX)
+    {
+        //1 Generates a random index to select a random object from the array. This can be a laser or one of the coin packs.
+        int randomIndex = Random.Range(0, availableObjects.Length);
+        //2 Creates an instance of the object that was just randomly selected.
+        GameObject obj = (GameObject)Instantiate(availableObjects[randomIndex]);
+        //3 Sets the object's position, using a random interval and a random height. This is controlled by script parameters.
+        float objectPositionX = lastObjectX + Random.Range(objectsMinDistance, objectsMaxDistance);
+        float randomY = Random.Range(objectsMinY, objectsMaxY);
+        obj.transform.position = new Vector3(objectPositionX, randomY, 0);
+        //4 Adds a random rotation to the newly placed objects.
+        float rotation = Random.Range(objectsMinRotation, objectsMaxRotation);
+        obj.transform.rotation = Quaternion.Euler(Vector3.forward * rotation);
+        //5 Adds the newly created object to the objects list for tracking and ultimately, removal (when it leaves the screen).*/
+        objects.Add(obj);
+    }
+
+    void GenerateObjectsIfRequired()
+    {
+        //1 Calculates key points ahead and behind the player. If the laser or coin pack is to the left of removeObjectsX, then it has already left the screen and is far behind. You will have to remove it. If there is no object after addObjectX point, then you need to add more objects since the last of the generated objects is about to enter the screen.The farthestObjectX variable is used to find the position of the last (rightmost) object to compare it with addObjectX.
+        float playerX = transform.position.x;
+        float removeObjectsX = playerX - screenWidthInPoints;
+        float addObjectX = playerX + screenWidthInPoints;
+        float farthestObjectX = 0;
+        //2 Since you cannot remove objects from an array or list while you iterate through it, you place objects that you need to remove in a separate list to be removed after the loop.
+        List<GameObject> objectsToRemove = new List<GameObject>();
+        foreach (var obj in objects)
+        {
+            //3 This is the position of the object (coin pack or laser).
+            float objX = obj.transform.position.x;
+            //4 By executing this code for each objX you get a maximum objX value in farthestObjectX at the end of the loop (or the initial value of 0, if all objects are to the left of origin, but not in our case).
+            farthestObjectX = Mathf.Max(farthestObjectX, objX);
+            //5 If the current object is far behind, it is marked for removal to free up some resources.
+            if (objX < removeObjectsX)
+            {
+                objectsToRemove.Add(obj);
+            }
+        }
+        //6 Removes objects marked for removal.
+        foreach (var obj in objectsToRemove)
+        {
+            objects.Remove(obj);
+            Destroy(obj);
+        }
+        //7 If the player is about to see the last object and there are no more objects ahead, call the method to add a new object.
+        if (farthestObjectX < addObjectX)
+        {
+            AddObject(farthestObjectX);
         }
     }
 }
